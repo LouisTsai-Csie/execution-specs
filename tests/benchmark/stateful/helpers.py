@@ -6,6 +6,7 @@ from enum import Enum, auto
 from functools import partial
 
 from execution_testing import (
+    DETERMINISTIC_FACTORY_ADDRESS,
     EOA,
     AccessList,
     Address,
@@ -18,6 +19,8 @@ from execution_testing import (
     IteratingBytecode,
     Op,
     Transaction,
+    compute_create2_address,
+    keccak256,
 )
 from execution_testing.base_types.base_types import Number
 
@@ -162,6 +165,36 @@ def account_mode_runtime_size(fork: Fork, account_mode: AccountMode) -> int:
     if account_mode == AccountMode.EXISTING_CONTRACT_JUMPDEST:
         return JOCHEMNET_RUNTIME_SIZE
     return fork.max_code_size()
+
+
+# Deterministic EIP-7702 delegates for the EXISTING_CONTRACT_DIFF receivers.
+#
+# Delegate ``i`` is the EOA with private key ``DIFF_DELEGATE_BASE_KEY + i``.
+# The predeployment setup (test_deploy_existing_contracts) authorizes it, via
+# an EIP-7702 set-code transaction, to delegate to the ``i``-th
+# EXISTING_CONTRACT_DIFF CREATE2 contract. Both sides are derivable from ``i``
+# alone, so a separate benchmark can target delegate ``i`` (e.g. send a
+# transaction to ``diff_delegate_authority(i)``) and know it executes the code
+# of ``diff_delegate_target(fork, i)``.
+DIFF_DELEGATE_BASE_KEY = int.from_bytes(
+    keccak256(b"gas-repricings-7702-delegate"), "big"
+)
+
+
+def diff_delegate_authority(index: int) -> EOA:
+    """Return the deterministic delegate EOA for receiver ``index``."""
+    return EOA(key=DIFF_DELEGATE_BASE_KEY + index)
+
+
+def diff_delegate_target(fork: Fork, index: int) -> Address:
+    """Return the EXISTING_CONTRACT_DIFF contract delegate ``index`` points to."""
+    return compute_create2_address(
+        address=DETERMINISTIC_FACTORY_ADDRESS,
+        salt=index,
+        initcode=account_mode_initcode(
+            fork, AccountMode.EXISTING_CONTRACT_DIFF
+        ),
+    )
 
 
 def build_benchmark_txs(
