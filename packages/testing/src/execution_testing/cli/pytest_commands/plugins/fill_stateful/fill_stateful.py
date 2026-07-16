@@ -147,6 +147,26 @@ def pytest_addoption(parser: pytest.Parser) -> None:
             "opt-in."
         ),
     )
+    group.addoption(
+        "--no-reset-between-tests",
+        action="store_true",
+        dest="no_reset_between_tests",
+        default=False,
+        help=(
+            "Do not rewind the client head to start_block after each test. "
+            "By default fill-stateful rewinds between tests so every fixture "
+            "is built from the same start_block; disabling it lets each test "
+            "build on the state the previous one left behind, so the live "
+            "client accumulates state and its final head sits above "
+            "start_block. Use this to pre-populate a datadir (e.g. deploy "
+            "setup contracts) whose persisted state a later run builds on. "
+            "The produced fixtures are unchanged — they still record each "
+            "test's own start_block — so they are only valid to replay "
+            "against a client at that same start_block; do not mix "
+            "accumulate-state fills with normal single-anchor fills in one "
+            "output directory."
+        ),
+    )
 
 
 def _resolve_session_fork(
@@ -759,6 +779,7 @@ def _reset_chain_between_tests(
     client_backend: ClientBackend,
     debug_rpc: DebugRPC,
     eth_rpc: "ChainBuilderEthRPC",
+    request: pytest.FixtureRequest,
 ) -> Generator[None, None, None]:
     """
     Rewind to start_block after each test so the chain is identical for
@@ -768,8 +789,14 @@ def _reset_chain_between_tests(
     so the client reorgs onto it even without a debug rewind. Afterwards we
     verify the block at the start_block number matches and fail loudly if it
     drifted (e.g. a live reorg).
+
+    With ``--no-reset-between-tests`` the rewind is skipped entirely, so each
+    test builds on the state the previous one left behind and the client head
+    accumulates upward — used to pre-populate a datadir a later run builds on.
     """
     yield
+    if request.config.getoption("no_reset_between_tests", default=False):
+        return
     if client_backend.start_block is None:
         return
     start_hex = client_backend.start_block["number"]
