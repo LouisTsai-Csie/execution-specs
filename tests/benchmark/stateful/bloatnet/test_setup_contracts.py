@@ -1,5 +1,7 @@
 """Deploy the CREATE2 contracts for benchmarks."""
 
+import os
+
 from execution_testing import (
     DETERMINISTIC_FACTORY_ADDRESS,
     EOA,
@@ -26,7 +28,13 @@ from tests.benchmark.helper.transactions import (
 )
 from tests.prague.eip7702_set_code_tx.spec import Spec as Spec7702
 
-RECEIVER_CONTRACT_COUNT = 100_000
+# Number of CREATE2 receiver contracts deployed per mode. Overridable via
+# BLOATNET_RECEIVER_CONTRACT_COUNT so a smoke/plumbing run (e.g. benchmarkoor
+# pre_runs) can deploy a small set for fast iteration; defaults to the full
+# 100k benchmark set.
+RECEIVER_CONTRACT_COUNT = int(
+    os.environ.get("BLOATNET_RECEIVER_CONTRACT_COUNT", "100000")
+)
 
 CONTRACT_MODES = [
     AccountMode.EXISTING_CONTRACT_MINIMAL,
