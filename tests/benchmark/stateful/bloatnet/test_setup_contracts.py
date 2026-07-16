@@ -26,7 +26,7 @@ from tests.benchmark.helper.transactions import (
 )
 from tests.prague.eip7702_set_code_tx.spec import Spec as Spec7702
 
-RECEIVER_CONTRACT_COUNT = 1_000
+RECEIVER_CONTRACT_COUNT = 100_000
 
 CONTRACT_MODES = [
     AccountMode.EXISTING_CONTRACT_MINIMAL,
