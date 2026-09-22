@@ -100,9 +100,22 @@ def deployment_gas(
     return regular, state
 
 
-@pytest.mark.valid_from("Amsterdam")
+# Osaka-sized contracts are deployable from Osaka: the only Amsterdam
+# dependency here is the larger code size itself, and `create_state_gas`
+# returns 0 before EIP-8037. Filling this pre-fork lets a shadow fork carry
+# the receivers across the Amsterdam transition instead of starting past it.
+@pytest.mark.valid_from("Osaka")
 @pytest.mark.parametrize(
-    "code_size", [Osaka.max_code_size(), Amsterdam.max_code_size()]
+    "code_size",
+    [
+        pytest.param(
+            Osaka.max_code_size(), marks=pytest.mark.valid_from("Osaka")
+        ),
+        pytest.param(
+            Amsterdam.max_code_size(),
+            marks=pytest.mark.valid_from("Amsterdam"),
+        ),
+    ],
 )
 def test_deploy_existing_contracts(
     benchmark_test: BenchmarkTestFiller,
