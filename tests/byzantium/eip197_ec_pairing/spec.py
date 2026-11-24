@@ -60,6 +60,15 @@ class Spec:
     # Point at infinity in G2
     INF_G2 = PointG2()
 
+    # Point on the G2 curve but not in the subgroup
+    P2_NOT_IN_SUBGROUP = PointG2(
+        (0x0, 0x800),
+        (
+            0x104E75A20B641566A0C71C9069A5256391AA31E22021D36C037C108DFB79C662,
+            0x00BF257AE3D66A589214F980A2AE34F9544BE2FCBCC13B21F4C1642F31AA4D20,
+        ),
+    )
+
     # Pairing precompile results
     PAIRING_TRUE = int.to_bytes(1, length=32, byteorder="big")
     PAIRING_FALSE = int.to_bytes(0, length=32, byteorder="big")
